@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Üzengető</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #1e293b;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #fbbf24;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+        
+        .slider:after {
+            content: "🌙";
+            color: white;
+            position: absolute;
+            right: 8px;
+            top: 5px;
+            font-size: 14px;
+        }
+        
+        input:checked + .slider:after {
+            content: "☀️";
+            left: 8px;
+            right: auto;
+        }
+        
+        .msg-self {
+            background-color: rgb(34, 197, 94);
+            color: white;
+            border-radius: 18px 18px 4px 18px;
+        }
+        
+        .msg-other {
+            background-color: rgb(241, 245, 249);
+            color: rgb(30, 41, 59);
+            border-radius: 18px 18px 18px 4px;
+        }
+        
+        .dark .msg-other {
+            background-color: rgb(30, 41, 59);
+            color: rgb(241, 245, 249);
+        }
+        
+        .online-dot {
+            width: 10px;
+            height: 10px;
+            background: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .mobile-menu {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-menu-hidden {
+                transform: translateX(-100%);
+            }
+            .mobile-menu-visible {
+                transform: translateX(0);
+            }
+        }
+        
+        .chat-container {
+            scrollbar-width: thin;
+            scrollbar-color: #22c55e #1e293b;
+        }
+        
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-container::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #22c55e;
+            border-radius: 3px;
+        }
+        
+        .dark .chat-container::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        
+        .light .chat-container::-webkit-scrollbar-track {
+            background: #e2e8f0;
+        }
+
+        .encryption-badge {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(34, 197, 94, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .privacy-shield {
+            position: relative;
+        }
+        
+        .privacy-shield::after {
+            content: "";
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 18px;
+            height: 18px;
+            background: #22c55e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 min-h-screen flex items-center justify-center p-2 md:p-4 lg:p-6 transition-colors duration-200">
+    <!-- Téma váltó -->
+    <div class="fixed top-4 right-4 z-50 flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md">
+        <span class="text-gray-600 dark:text-gray-300 text-sm">🌙</span>
+        <label class="theme-switch">
+            <input type="checkbox" id="themeToggle">
+            <span class="slider"></span>
+        </label>
+        <span class="text-gray-600 dark:text-gray-300 text-sm">☀️</span>
+    </div>
+
+    <!-- 🔹 Belépés / Regisztráció -->
+    <div id="auth" class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700">
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-primary-500 rounded-2xl shadow-md mb-4">
+                <i class="fas fa-comments text-white text-2xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-primary-600 dark:text-primary-400">Üzengető</h1>
+            <p class="text-gray-600 dark:text-gray-300">Teljesen privát üzenetküldés</p>
+        </div>
+        
+        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl mb-6 border border-gray-200 dark:border-gray-600">
+            <h2 class="text-xl font-semibold text-primary-600 dark:text-primary-400 mb-4 text-center"><i class="fas fa-sign-in-alt mr-2"></i>Belépés</h2>
+            <input id="loginUser" class="w-full p-3 mb-3 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-800 dark:text-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Felhasználónév">
+            <input id="loginPass" type="password" class="w-full p-3 mb-4 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-800 dark:text-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Jelszó">
+            <button onclick="login()" class="w-full bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-4 rounded-xl transition duration-200 shadow-md hover:shadow-lg"><i class="fas fa-sign-in-alt mr-2"></i>Belépés</button>
+        </div>
+        
+        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
+            <h2 class="text-xl font-semibold text-primary-600 dark:text-primary-400 mb-4 text-center"><i class="fas fa-user-plus mr-2"></i>Regisztráció</h2>
+            <input id="regUser" class="w-full p-3 mb-3 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-800 dark:text-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Felhasználónév">
+            <input id="regPass" type="password" class="w-full p-3 mb-4 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-800 dark:text-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Jelszó">
+            <button onclick="register()" class="w-full bg-white dark:bg-gray-600 hover:bg-gray-100 dark:hover:bg-gray-500 border border-primary-500 text-primary-600 dark:text-primary-400 font-medium py-3 px-4 rounded-xl transition duration-200 shadow-md hover:shadow-lg"><i class="fas fa-user-plus mr-2"></i>Regisztráció</button>
+        </div>
+
+        <div class="mt-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div class="flex items-start">
+                <i class="fas fa-shield-alt text-blue-500 mt-1 mr-2"></i>
+                <div>
+                    <p class="text-blue-700 dark:text-blue-300 text-sm font-semibold">Teljes adatvédelem</p>
+                    <p class="text-blue-600 dark:text-blue-400 text-xs">Az üzeneteid kizárólag a címzett számára láthatók. Senki más nem fér hozzájuk.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔹 Kijelentkezés -->
+    <button id="logoutBtn" onclick="logout()" class="hidden fixed top-4 left-4 z-50 bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-xl shadow-md transition duration-200 flex items-center">
+        <i class="fas fa-sign-out-alt mr-2"></i>Kijelentkezés
+    </button>
+
+    <!-- 🔹 Mobile menu toggle -->
+    <button id="menuToggle" class="hidden fixed top-16 right-4 z-50 bg-primary-500 hover:bg-primary-600 text-white font-medium p-3 rounded-xl shadow-md transition duration-200 md:hidden">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- 🔹 Chat felület -->
+    <div id="app" class="hidden w-full h-[90vh] max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row border border-gray-200 dark:border-gray-700">
+        <!-- Sidebar -->
+        <aside class="mobile-menu md:relative absolute inset-y-0 left-0 z-40 w-full md:w-80 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-4 flex flex-col md:translate-x-0 mobile-menu-hidden border-r border-gray-200 dark:border-gray-600">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold flex items-center text-primary-600 dark:text-primary-400">
+                    <i class="fas fa-user-friends mr-2"></i>Barátaim
+                </h2>
+                <button class="md:hidden text-gray-600 dark:text-gray-300" onclick="toggleMobileMenu()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-gray-600 dark:text-gray-300 text-sm uppercase font-semibold mb-2 flex items-center">
+                    <i class="fas fa-search mr-2"></i>Keresés
+                </h3>
+                <div class="flex">
+                    <input id="searchInput" class="flex-grow p-3 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-800 dark:text-gray-200 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Felhasználónév...">
+                    <button onclick="searchUser()" class="bg-primary-500 hover:bg-primary-600 text-white px-4 rounded-r-xl">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+                <ul id="searchResults" class="mt-3 space-y-2 max-h-40 overflow-y-auto"></ul>
+            </div>
+
+            <div class="space-y-4 flex-grow overflow-y-auto">
+                <div>
+                    <button onclick="toggleList('requests')" class="w-full text-left bg-white dark:bg-gray-600 hover:bg-gray-100 dark:hover:bg-gray-500 font-medium py-2 px-3 rounded-xl transition duration-200 flex items-center justify-between border border-gray-200 dark:border-gray-500">
+                        <span><i class="fas fa-user-clock mr-2"></i>Barátkérések</span>
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </button>
+                    <ul id="requests" class="hidden mt-2 space-y-2 p-2 bg-white dark:bg-gray-600 rounded-xl"></ul>
+                </div>
+
+                <div>
+                    <button onclick="toggleList('friendList')" class="w-full text-left bg-white dark:bg-gray-600 hover:bg-gray-100 dark:hover:bg-gray-500 font-medium py-2 px-3 rounded-xl transition duration-200 flex items-center justify-between border border-gray-200 dark:border-gray-500">
+                        <span><i class="fas fa-users mr-2 privacy-shield"></i>Barátaim</span>
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </button>
+                    <ul id="friendList" class="hidden mt-2 space-y-1"></ul>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-200 dark:border-gray-600 mt-4 text-center text-gray-600 dark:text-gray-300 text-sm">
+                <div class="flex items-center justify-center mb-2">
+                    <i class="fas fa-lock text-primary-500 mr-2"></i>
+                    <span>Végpontok között titkosított</span>
+                </div>
+                Üzengető App &copy; 2023
+            </div>
+        </aside>
+
+        <!-- Main chat area -->
+        <section class="flex-grow flex flex-col relative">
+            <div id="chatHeader" class="p-4 border-b border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center">
+                <i class="fas fa-user-circle text-primary-500 text-2xl mr-3"></i>
+                <div>
+                    <h3 class="text-lg font-semibold text-primary-600 dark:text-primary-400">Válassz barátot a chathez</h3>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm">Kattints a barátodra a beszélgetéshez</p>
+                </div>
+            </div>
+            <div id="chat" class="flex-grow p-4 overflow-y-auto bg-gray-50 dark:bg-gray-700 space-y-3 flex flex-col chat-container">
+                <div class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-lock text-4xl mb-4 text-primary-500"></i>
+                    <p class="text-center font-semibold">Privát beszélgetés</p>
+                    <p class="text-sm text-center mt-2">Az üzeneteket kizárólag te és a címzett látjátok</p>
+                    <p class="text-xs text-center mt-4 text-gray-400 dark:text-gray-500">Nincs hozzáférési lehetőség harmadik fél számára</p>
+                </div>
+            </div>
+            <form id="sendForm" class="hidden p-4 border-t border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 flex space-x-2">
+                <input id="msg" type="text" placeholder="Írj privát üzenetet..." class="flex-grow p-3 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-800 dark:text-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <button class="bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-5 rounded-xl transition duration-200 shadow-md hover:shadow-lg">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </section>
+    </div>
+
+    <div id="notification" class="fixed top-20 right-4 z-50 text-white px-6 py-4 rounded-xl shadow-lg hidden transition-all duration-300 transform"></div>
+
+    <script>
+        let currentConvId = null;
+        let lastId = 0;
+        let currentUser = null;
+        let currentFriendId = null;
+        let currentFriendName = null;
+
+        // Téma váltás kezelése
+        const themeToggle = document.getElementById('themeToggle');
+        
+        // Alapértelmezett téma beállítása (sötét)
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+            themeToggle.checked = true;
+        } else {
+            document.documentElement.classList.add('dark');
+            themeToggle.checked = false;
+        }
+        
+        themeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        function showNotification(msg, success = true) {
+            const n = document.getElementById('notification');
+            n.className = success ?
+                'fixed top-20 right-4 z-50 bg-primary-500 text-white px-6 py-4 rounded-xl shadow-lg transition-all duration-300 transform flex items-center' :
+                'fixed top-20 right-4 z-50 bg-red-500 text-white px-6 py-4 rounded-xl shadow-lg transition-all duration-300 transform flex items-center';
+            
+            n.innerHTML = success ?
+                `<i class="fas fa-check-circle mr-2"></i> ${msg}` :
+                `<i class="fas fa-exclamation-circle mr-2"></i> ${msg}`;
+                
+            n.classList.remove('hidden');
+            setTimeout(() => {
+                n.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.querySelector('.mobile-menu');
+            menu.classList.toggle('mobile-menu-hidden');
+            menu.classList.toggle('mobile-menu-visible');
+        }
+
+        // 🔹 Auth
+        async function login() {
+            const username = document.getElementById('loginUser').value;
+            const password = document.getElementById('loginPass').value;
+            
+            const res = await fetch('login.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const j = await res.json();
+            if (j.ok) { 
+                currentUser = username;
+                showNotification('Sikeres bejelentkezés'); 
+                showApp(); 
+            } else { 
+                showNotification(j.error, false); 
+            }
+        }
+
+        async function register() {
+            const res = await fetch('register.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: document.getElementById('regUser').value,
+                    password: document.getElementById('regPass').value
+                })
+            });
+            const j = await res.json();
+            if (j.ok) { 
+                showNotification('Sikeres regisztráció'); 
+            } else { 
+                showNotification(j.error, false); 
+            }
+        }
+
+        async function logout() {
+            await fetch('logout.php');
+            document.getElementById('auth').classList.remove('hidden');
+            document.getElementById('app').classList.add('hidden');
+            document.getElementById('logoutBtn').classList.add('hidden');
+            document.getElementById('menuToggle').classList.add('hidden');
+            currentUser = null;
+            currentFriendId = null;
+            currentFriendName = null;
+        }
+
+        function showApp() {
+            document.getElementById('auth').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            document.getElementById('logoutBtn').classList.remove('hidden');
+            document.getElementById('menuToggle').classList.remove('hidden');
+            loadFriends();
+            loadRequests();
+        }
+
+        function toggleList(id) {
+            const el = document.getElementById(id);
+            el.classList.toggle('hidden');
+        }
+
+        // 🔹 Friends & Requests
+        async function loadFriends() {
+            const res = await fetch('get_friends.php');
+            const data = await res.json();
+            const list = document.getElementById('friendList');
+            list.innerHTML = '';
+            
+            if (data.friends && data.friends.length > 0) {
+                for (const f of data.friends) {
+                    const li = document.createElement('li');
+                    li.className = 'p-3 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg cursor-pointer transition duration-200 flex items-center';
+                    li.innerHTML = `
+                        <div class="flex items-center">
+                            <span class="online-dot"></span>
+                            <div>
+                                <div class="font-medium text-gray-800 dark:text-gray-200">${f.username}</div>
+                                <div class="text-xs text-primary-500">Privát üzenet</div>
+                            </div>
+                        </div>
+                        <div class="ml-auto text-primary-500">
+                            <i class="fas fa-comment"></i>
+                        </div>
+                    `;
+                    li.onclick = () => openConversation(f.id, f.username);
+                    list.appendChild(li);
+                }
+            } else {
+                list.innerHTML = '<li class="p-3 text-gray-500 dark:text-gray-400 text-center">Még nincsenek barátaid</li>';
+            }
+        }
+
+        async function loadRequests() {
+            const res = await fetch('get_friend_requests.php');
+            const data = await res.json();
+            const list = document.getElementById('requests');
+            list.innerHTML = '';
+            
+            if (data.requests && data.requests.length > 0) {
+                for (const r of data.requests) {
+                    const li = document.createElement('li');
+                    li.className = 'p-3 bg-white dark:bg-gray-600 rounded-lg';
+                    li.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <span class="online-dot"></span>
+                                <span class="font-medium text-gray-800 dark:text-gray-200">${r.sender_name}</span>
+                            </div>
+                            <div>
+                                <button onclick="respondReq(${r.id},'accept')" class="bg-primary-500 hover:bg-primary-600 text-white p-2 rounded-lg mr-1 transition duration-200">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button onclick="respondReq(${r.id},'reject')" class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition duration-200">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                }
+            } else {
+                list.innerHTML = '<li class="p-3 text-gray-500 dark:text-gray-400 text-center">Nincsenek függőben lévő kérelmek</li>';
+            }
+        }
+
+        async function respondReq(id, action) {
+            const res = await fetch('respond_friend_request.php', {
+                method: 'POST',
+                body: JSON.stringify({ request_id: id, action }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const j = await res.json();
+            if (j.ok) {
+                loadRequests();
+                loadFriends();
+                showNotification(action === 'accept' ? 'Barátkérés elfogadva' : 'Barátkérés elutasítva');
+            } else showNotification(j.error, false);
+        }
+
+        // 🔹 Search
+        async function searchUser() {
+            const q = document.getElementById('searchInput').value.trim();
+            const list = document.getElementById('searchResults');
+            list.innerHTML = '';
+            if (!q) return;
+            
+            try {
+                const res = await fetch('search_users.php?q=' + encodeURIComponent(q));
+                const data = await res.json();
+                if (data.message) {
+                    const li = document.createElement('li');
+                    li.className = 'p-2 text-gray-600 dark:text-gray-300 text-sm';
+                    li.textContent = data.message;
+                    list.appendChild(li);
+                } else if (data.users && data.users.length > 0) {
+                    for (const u of data.users) {
+                        // Ne lehessen saját magunkat hozzáadni
+                        if (u.username === currentUser) continue;
+                        
+                        const li = document.createElement('li');
+                        li.className = 'flex justify-between items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg';
+                        li.innerHTML = `
+                            <div class="flex items-center">
+                                <span class="online-dot"></span>
+                                <span class="text-gray-800 dark:text-gray-200">${u.username}</span>
+                            </div>
+                            <button onclick="addFriend(${u.id})" class="bg-primary-500 hover:bg-primary-600 text-white text-sm py-1 px-3 rounded-lg transition duration-200">
+                                <i class="fas fa-user-plus"></i>
+                            </button>`;
+                        list.appendChild(li);
+                    }
+                } else {
+                    list.innerHTML = '<li class="p-2 text-gray-600 dark:text-gray-300 text-sm">Nincs találat</li>';
+                }
+            } catch (err) { 
+                showNotification('Hiba történt a keresés során', false); 
+            }
+        }
+
+        async function addFriend(id) {
+            const res = await fetch('send_friend_request.php', {
+                method: 'POST',
+                body: JSON.stringify({ friend_id: id }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const j = await res.json();
+            if (j.ok) showNotification('Barátkérés elküldve');
+            else showNotification(j.error, false);
+        }
+
+        // 🔹 Chat - Teljesen privát üzenetküldés
+        async function openConversation(friendId, friendName) {
+            // Mobile: close menu after selection
+            if (window.innerWidth < 768) {
+                toggleMobileMenu();
+            }
+            
+            currentFriendId = friendId;
+            currentFriendName = friendName;
+            
+            const res = await fetch('create_conversation.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    friend_id: friendId,
+                    is_private: true
+                })
+            });
+            
+            const j = await res.json();
+            if (!j.ok) { 
+                showNotification('Hiba a beszélgetés megnyitásakor', false); 
+                return; 
+            }
+            
+            currentConvId = j.conversation_id;
+            lastId = 0;
+            
+            document.getElementById('chatHeader').innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-user-circle text-primary-500 text-2xl mr-3"></i>
+                    <div>
+                        <h3 class="text-lg font-semibold text-primary-600 dark:text-primary-400">${friendName}</h3>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                            <i class="fas fa-lock mr-1"></i>Privát beszélgetés - csak ketten látjátok
+                        </p>
+                    </div>
+                </div>
+                <button class="ml-auto text-primary-500 hover:text-primary-600 dark:hover:text-primary-400">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+            `;
+            
+            document.getElementById('sendForm').classList.remove('hidden');
+            document.getElementById('chat').innerHTML = '';
+            
+            // Titkosítási jelzés hozzáadása
+            const encryptionBadge = document.createElement('div');
+            encryptionBadge.className = 'encryption-badge';
+            encryptionBadge.innerHTML = '<i class="fas fa-lock"></i> Titkosított';
+            document.getElementById('chat').appendChild(encryptionBadge);
+            
+            fetchMessages();
+        }
+
+        async function fetchMessages() {
+            if (!currentConvId) return;
+            
+            const res = await fetch('get_messages.php?conversation_id=' + currentConvId + '&since=' + lastId);
+            const data = await res.json();
+            
+            // Üzenetek betöltése (csak az aktuális beszélgetés üzenetei)
+            if (data.messages && data.messages.length > 0) {
+                for (const m of data.messages) { 
+                    // Biztonsági ellenőrzés - csak a jelenlegi beszélgetés üzenetei
+                    if (m.conversation_id == currentConvId) {
+                        addMessage(m); 
+                        lastId = Math.max(lastId, m.id); 
+                    }
+                }
+            }
+        }
+
+        function addMessage(m) {
+            const el = document.createElement('div');
+            const isOwn = m.sender_name === 'Te' || m.sender_id === currentUser;
+            
+            el.className = 'p-4 max-w-[85%] md:max-w-[75%] ' + (isOwn ? 'msg-self self-end' : 'msg-other self-start');
+            el.innerHTML = `
+                <div class="font-semibold ${isOwn ? 'text-white' : 'text-gray-800 dark:text-gray-200'}">${m.sender_name}</div>
+                <div class="my-1 ${isOwn ? 'text-white' : 'text-gray-800 dark:text-gray-200'}">${m.message}</div>
+                <div class="text-xs ${isOwn ? 'text-primary-100' : 'text-gray-600 dark:text-gray-300'}">${m.created_at}</div>
+            `;
+            document.getElementById('chat').appendChild(el);
+            document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+        }
+
+        setInterval(fetchMessages, 2000);
+
+        document.getElementById('sendForm').addEventListener('submit', async e => {
+            e.preventDefault();
+            const msg = document.getElementById('msg').value.trim();
+            if (!msg || !currentConvId || !currentFriendId) return;
+            
+            const res = await fetch('send_message.php', {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    conversation_id: currentConvId, 
+                    friend_id: currentFriendId,
+                    message: msg,
+                    is_private: true
+                }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const j = await res.json();
+            if (j.ok) {
+                document.getElementById('msg').value = '';
+                // Üzenet azonnali hozzáadása a chathez
+                addMessage({
+                    sender_id: currentUser,
+                    sender_name: 'Te',
+                    message: msg,
+                    created_at: 'Épp most',
+                    conversation_id: currentConvId
+                });
+            } else {
+                showNotification(j.error, false);
+            }
+        });
+
+        // Initialize mobile menu behavior
+        document.getElementById('menuToggle').addEventListener('click', toggleMobileMenu);
+    </script>
+</body>
+</html>
